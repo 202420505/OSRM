@@ -31,7 +31,7 @@ jobs:
         cmake --build .
 
     - name: Download OSM data
-      run: wget http://download.geofabrik.de/your-region-latest.osm.pbf -O data.osm.pbf
+      run: wget http://download.geofabrik.de/south-korea-latest.osm.pbf -O data.osm.pbf
 
     - name: Preprocess OSM data
       run: |
