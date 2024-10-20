@@ -1,4 +1,4 @@
-name: Deploy OSRM to Cloudflare
+name: Deploy OSRM to Cloudflare CDN
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install OSRM
+    - name: Install OSRM dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y osrm-backend osrm-tools wget
@@ -27,9 +27,13 @@ jobs:
         osrm-partition data.osrm
         osrm-customize data.osrm
 
-    - name: Upload to Cloudflare R2
+    - name: Upload to server
       env:
-        CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-        CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        SSH_HOST: ${{ secrets.SSH_HOST }}
+        SSH_USER: ${{ secrets.SSH_USER }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}
       run: |
-        wrangler r2 object put my-bucket/data.osrm --file ./data.osrm
+        mkdir -p ~/.ssh
+        echo "${SSH_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        scp -o StrictHostKeyChecking=no data.osrm* $SSH_USER@$SSH_HOST:/var/www/html/osrm/
