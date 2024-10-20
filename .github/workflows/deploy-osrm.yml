@@ -1,0 +1,35 @@
+name: Deploy OSRM to Cloudflare
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install OSRM
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y osrm-backend osrm-tools wget
+
+    - name: Download OSM data
+      run: wget http://download.geofabrik.de/your-region-latest.osm.pbf -O data.osm.pbf
+
+    - name: Preprocess OSM data
+      run: |
+        osrm-extract -p /usr/share/osrm/profiles/car.lua data.osm.pbf
+        osrm-partition data.osrm
+        osrm-customize data.osrm
+
+    - name: Upload to Cloudflare R2
+      env:
+        CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      run: |
+        wrangler r2 object put my-bucket/data.osrm --file ./data.osrm
