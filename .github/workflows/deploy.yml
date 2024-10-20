@@ -13,19 +13,32 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install OSRM dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y osrm-backend osrm-tools wget
+        sudo apt-get install -y build-essential cmake git g++ libboost-all-dev \
+          lua5.2 liblua5.2-dev libtbb-dev wget
+
+    - name: Clone OSRM Backend
+      run: git clone https://github.com/Project-OSRM/osrm-backend.git
+
+    - name: Build OSRM
+      run: |
+        cd osrm-backend
+        mkdir -p build
+        cd build
+        cmake ..
+        cmake --build .
 
     - name: Download OSM data
       run: wget http://download.geofabrik.de/your-region-latest.osm.pbf -O data.osm.pbf
 
     - name: Preprocess OSM data
       run: |
-        osrm-extract -p /usr/share/osrm/profiles/car.lua data.osm.pbf
-        osrm-partition data.osrm
-        osrm-customize data.osrm
+        cd osrm-backend/build
+        ./osrm-extract -p ../profiles/car.lua ../../data.osm.pbf
+        ./osrm-partition ../../data.osrm
+        ./osrm-customize ../../data.osrm
 
     - name: Upload to server
       env:
